@@ -1,5 +1,8 @@
 import {terser} from "rollup-plugin-terser";
 import typescript from '@rollup/plugin-typescript';
+import nodeResolve from "@rollup/plugin-node-resolve";
+import json from '@rollup/plugin-json';
+import commonjs from '@rollup/plugin-commonjs';
 
 const license = "/**!\n" +
     " * cazan-cli  v0.1.0 (https://github.com/AeliaDev/cazan-cli)\n" +
@@ -12,15 +15,15 @@ export default {
     output: [
         {
             file: 'dist/cazan-cli.js',
-            format: 'es',
+            format: 'cjs',
             banner: license,
         },{
             file: 'dist/cazan-cli.min.js',
-            format: 'es',
+            format: 'cjs',
             name: 'cazan',
             banner: license,
             plugins: [terser()]
         }
     ],
-    plugins: [typescript()],
+    plugins: [typescript(), json(), nodeResolve(), commonjs()],
 };
