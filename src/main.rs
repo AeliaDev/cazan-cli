@@ -1,11 +1,15 @@
-use crate::cli::Subcommand;
-
 mod cli;
 
 fn main() {
-    let cli: cli::CLI = argh::from_env();
+    let cli: cli::Cli = argh::from_env();
+
+    if cli.version {
+        println!("cazan version {}", env!("CARGO_PKG_VERSION"));
+        return;
+    }
 
     match cli.subcommand {
-        _ => {}
+        None => {}
+        Some(_) => {}
     }
 }
