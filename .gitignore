@@ -1,4 +1,7 @@
 /target
 
+# test
+test/
+
 # Intellij
 .idea/
