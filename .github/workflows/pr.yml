@@ -1,0 +1,47 @@
+name: PR on main
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  workflow:
+    strategy:
+      matrix:
+        target: [x86_64-pc-windows-gnu, x86_64-unknown-linux-gnu, x86_64-apple-darwin]
+        os: [ubuntu-latest]
+        exclude:
+          - target: x86_64-apple-darwin
+            os: ubuntu-latest
+        include:
+          - target: x86_64-apple-darwin
+            os: macos-latest
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          target: ${{ matrix.target }}
+
+      - name: Cargo Format Check
+        if: ${{ always() }}
+        run: |
+          echo "Checking the format..."
+          rustup component add rustfmt
+          cargo fmt --all -- --check
+
+      - name: Cargo Clippy Check
+        if: ${{ always() }}
+        run: |
+          echo "Running Clippy..."
+          rustup component add clippy
+          cargo clippy --all-features -- -D warnings
+
+      - name: Cargo Test
+        if: ${{ always() }}
+        run: |
+          echo "Running tests..."
+          cargo test --all-features
