@@ -1,0 +1,78 @@
+name: Publish Release
+
+on:
+  release:
+    types:
+      - released
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - target: x86_64-pc-windows-gnu
+            os: ubuntu-latest
+            build-bin-name: cazan.exe
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-latest
+            build-bin-name: cazan
+          - target: x86_64-apple-darwin
+            os: macos-latest
+            build-bin-name: cazan
+
+    name: Cargo Build (+ Test, Fmt, Clippy)
+    if: always()
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v2
+        name: Checkout
+
+      - uses: dtolnay/rust-toolchain@stable
+        name: Install Rust
+        with:
+          target: ${{ matrix.target }}
+          components: rustfmt, clippy
+
+      - run: cargo fmt --all -- --check
+        name: Cargo Format Check
+
+      - run: cargo clippy --all-features -- -D warnings
+        name: Cargo Clippy Check
+
+      - run: cargo test --all-features
+        name: Cargo Test
+
+      - run: cargo build --release --all-features
+        name: Cargo Build
+
+      - uses: actions/upload-artifact@v2
+        name: Upload Release Artifact
+        with:
+          name: ${{ matrix.build-bin-name }}
+          path: target/${{ matrix.target }}/release/${{ matrix.build-bin-name }}
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - bin-name: cazan-win64.exe
+          - bin-name: cazan-linux64
+          - bin-name: cazan-macos
+
+    steps:
+      - uses: actions/download-artifact@v2
+        name: Download Release Artifact
+        with:
+          name: ${{ matrix.bin-name }}
+          path: build-artifacts/
+
+      - uses: softprops/action-gh-release@v1
+        name: Upload Release Asset
+        env:
+          GITHUB_TOKEN: ${{ secrets.PAT_GITHUB_SELLIG }}
+        with:
+          files: build-artifacts/${{ matrix.bin-name }}
+          release: ${{ github.event.release.id }}
