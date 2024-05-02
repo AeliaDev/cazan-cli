@@ -1,10 +1,9 @@
-use super::init::Init;
 use argh::FromArgs;
 
 #[derive(FromArgs, PartialEq, Debug)]
 #[argh(subcommand)]
 pub enum SubCommandEnum {
-    Init(Init),
+    PreBuild(super::prebuild::PreBuild),
 }
 
 pub trait SubCommandTrait {
@@ -14,8 +13,8 @@ pub trait SubCommandTrait {
 impl SubCommandEnum {
     pub fn run(&self) {
         match self {
-            SubCommandEnum::Init(init) => {
-                init.run();
+            SubCommandEnum::PreBuild(prebuild) => {
+                prebuild.run();
             }
         }
     }
