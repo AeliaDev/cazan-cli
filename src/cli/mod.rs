@@ -1,14 +1,11 @@
-mod init;
+mod prebuild;
 mod subcommands;
 
 use argh::FromArgs;
 pub use subcommands::{SubCommandEnum, SubCommandTrait};
 
 #[derive(FromArgs, Debug)]
-#[argh(
-    name = "cazan",
-    description = "The Command Line Tool to install to build your Cazan project"
-)]
+#[argh(description = "Cazan CLI")]
 pub(crate) struct Cli {
     #[argh(switch, short = 'v', description = "print version info")]
     pub(crate) version: bool,

@@ -1,10 +1,16 @@
+use cprint::{ceprint, ceprintln, Color, cprint};
+
 mod cli;
 
 fn main() {
     let cli: cli::Cli = argh::from_env();
 
     if cli.version {
-        println!("cazan-cli version {}", env!("CARGO_PKG_VERSION"));
+        println!(
+            "{} version {}",
+            env!("CARGO_BIN_NAME"),
+            env!("CARGO_PKG_VERSION")
+        );
         return;
     }
 
@@ -13,7 +19,7 @@ fn main() {
             subcommand.run();
         }
         None => {
-            println!("Error: No subcommand was used");
+            ceprintln!("No subcommand was used");
         }
     }
 }

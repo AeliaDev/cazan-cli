@@ -1,6 +1,5 @@
 [package]
 name = "cazan-cli"
-description = "The Command Line Tool to install to build your Cazan project"
 version = "0.1.0"
 edition = "2021"
 
@@ -8,7 +7,9 @@ edition = "2021"
 name = "cazan"
 path = "src/main.rs"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
 argh = "0.1.12"
+cazan-common = "0.1.1"
+serde_json = "1.0.116"
+image = "0.25.1"
+cprint = { version = "0.5.1", features = ["ceprint"] }
