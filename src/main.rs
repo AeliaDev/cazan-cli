@@ -1,5 +1,5 @@
-use std::process::ExitCode;
 use cprint::ceprintln;
+use std::process::ExitCode;
 
 mod cli;
 mod terminal;
@@ -22,9 +22,10 @@ fn main() -> ExitCode {
             ExitCode::SUCCESS
         }
         None => {
-            ceprintln!("Error no subcommand was given, use --help to see the available subcommands");
+            ceprintln!(
+                "Error no subcommand was given, use --help to see the available subcommands"
+            );
             ExitCode::FAILURE
         }
-
     }
 }

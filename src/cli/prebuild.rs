@@ -5,34 +5,37 @@
 use std::fs;
 use std::sync::{Arc, Mutex};
 
-use argh::FromArgs;
-use cprint::cformat;
-use serde_json::{json, Value};
 use super::SubCommandTrait;
+use crate::terminal::SubTerminal;
+use argh::FromArgs;
 use cazan_common::rdp::rdp;
 use cazan_common::{image::ImageEdgesParser, triangulation::triangulate};
-use crate::terminal::SubTerminal;
+use cprint::cformat;
+use serde_json::{json, Value};
 
 #[derive(PartialEq, Debug, FromArgs)]
 #[argh(
-subcommand,
-name = "prebuild",
-description = "pre-build the assets of your project"
+    subcommand,
+    name = "prebuild",
+    description = "pre-build the assets of your project"
 )]
 pub struct PreBuild {
     #[argh(
-    option,
-    short = 'o',
-    description = "output file",
-    default = "String::from(\"cazan-assets.json\")"
+        option,
+        short = 'o',
+        description = "output file",
+        default = "String::from(\"cazan-assets.json\")"
     )]
     pub output: String,
 
+    #[argh(option, short = 'a', description = "asset directories")]
+    pub asset_dirs: Vec<String>,
+
     #[argh(
-    option,
-    short = 'e',
-    description = "epsilon value for the Ramer-Douglas-Peucker algorithm (Image simplification)",
-    default = "3.0"
+        option,
+        short = 'e',
+        description = "epsilon value for the Ramer-Douglas-Peucker algorithm (Image simplification)",
+        default = "3.0"
     )]
     pub epsilon: f64,
 }
@@ -53,12 +56,13 @@ fn read_dir_recursive(dir: &std::path::Path) -> Vec<std::path::PathBuf> {
 
 impl SubCommandTrait for PreBuild {
     fn run(&self) {
-        let cwd = std::env::current_dir().unwrap();
+        let files = self
+            .asset_dirs
+            .iter()
+            .flat_map(|dir| read_dir_recursive(dir.as_ref()))
+            .collect::<Vec<std::path::PathBuf>>();
 
-        let files = read_dir_recursive(&cwd);
-
-        // Filter PNG and JPEG files
-        let png_files: Vec<std::path::PathBuf> = files
+        let files: Vec<std::path::PathBuf> = files
             .iter()
             .filter(|file| {
                 file.extension()
@@ -68,9 +72,10 @@ impl SubCommandTrait for PreBuild {
             .collect();
 
         let mut map = serde_json::Map::<String, Value>::new();
-        let terminal: Arc<Mutex<SubTerminal>> = Arc::new(Mutex::new(SubTerminal::new(png_files.len() as u16)));
+        let terminal: Arc<Mutex<SubTerminal>> =
+            Arc::new(Mutex::new(SubTerminal::new(files.len() as u16)));
 
-        let handles: Vec<_> = png_files
+        let handles: Vec<_> = files
             .iter()
             .enumerate()
             .map(|(i, file)| {
@@ -78,8 +83,10 @@ impl SubCommandTrait for PreBuild {
                 let file = file.clone();
                 let terminal = terminal.clone();
                 std::thread::spawn(move || {
-
-                    terminal.lock().unwrap().write_to(cformat!("Parsing", file.to_str().unwrap() => Cyan).as_str(), i);
+                    terminal.lock().unwrap().write_to(
+                        cformat!("Parsing", file.to_str().unwrap() => Cyan).as_str(),
+                        i,
+                    );
 
                     let image = image::open(&file).unwrap();
                     let edges_parser = ImageEdgesParser::new(image);
@@ -87,14 +94,18 @@ impl SubCommandTrait for PreBuild {
                     let rdp_polygon = rdp(&polygon, epsilon);
                     let triangles = triangulate(&rdp_polygon).expect("Error triangulating");
 
-                    terminal.lock().unwrap().rewrite_to(cformat!(
-                        "Parsed",
-                        format!(
-                            "`{}` to {} triangles",
-                            file.file_name().unwrap().to_str().unwrap().to_string(),
-                            triangles.len()
+                    terminal.lock().unwrap().rewrite_to(
+                        cformat!(
+                            "Parsed",
+                            format!(
+                                "`{}` to {} triangles",
+                                file.file_name().unwrap().to_str().unwrap().to_string(),
+                                triangles.len()
+                            )
                         )
-                    ).as_ref(), i);
+                        .as_ref(),
+                        i,
+                    );
 
                     (file.to_str().unwrap().to_string(), json!(triangles))
                 })

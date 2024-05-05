@@ -1,5 +1,5 @@
+use crossterm::{cursor, terminal, ExecutableCommand};
 use std::io::{stdout, StdoutLock, Write};
-use crossterm::{cursor, ExecutableCommand, terminal};
 
 pub struct SubTerminal {
     n_lines: u16,
@@ -12,7 +12,10 @@ impl SubTerminal {
             println!("\r");
         }
         for _ in 0..n_lines {
-            stdout().lock().execute(cursor::MoveToPreviousLine(1)).unwrap();
+            stdout()
+                .lock()
+                .execute(cursor::MoveToPreviousLine(1))
+                .unwrap();
         }
 
         Self {
@@ -31,10 +34,14 @@ impl SubTerminal {
     fn move_to(&mut self, stdout_lock: &mut StdoutLock, line: usize) {
         let line = line % self.n_lines as usize;
         if line < self.current_line {
-            stdout_lock.execute(cursor::MoveUp(self.current_line as u16 - line as u16)).unwrap();
+            stdout_lock
+                .execute(cursor::MoveUp(self.current_line as u16 - line as u16))
+                .unwrap();
             stdout_lock.execute(cursor::MoveToColumn(0)).unwrap();
         } else {
-            stdout_lock.execute(cursor::MoveDown(line as u16 - self.current_line as u16)).unwrap();
+            stdout_lock
+                .execute(cursor::MoveDown(line as u16 - self.current_line as u16))
+                .unwrap();
             stdout_lock.execute(cursor::MoveToColumn(0)).unwrap();
         }
         self.current_line = line;
@@ -44,7 +51,9 @@ impl SubTerminal {
         let mut stdout = stdout().lock();
         self.move_to(&mut stdout, line);
         stdout.execute(cursor::MoveToColumn(0)).unwrap();
-        stdout.execute(terminal::Clear(terminal::ClearType::CurrentLine)).unwrap();
+        stdout
+            .execute(terminal::Clear(terminal::ClearType::CurrentLine))
+            .unwrap();
         write!(stdout, "{}", text).unwrap();
         stdout.flush().unwrap();
     }
