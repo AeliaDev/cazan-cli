@@ -18,9 +18,7 @@ fn main() -> ExitCode {
     }
 
     match cli.subcommand {
-        Some(subcommand) => {
-            subcommand.run()
-        }
+        Some(subcommand) => subcommand.run(),
         None => {
             ceprintln!(
                 "Error no subcommand was given, use --help to see the available subcommands"
