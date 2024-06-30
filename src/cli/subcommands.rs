@@ -1,5 +1,5 @@
-use std::process::ExitCode;
 use argh::FromArgs;
+use std::process::ExitCode;
 
 #[derive(FromArgs, PartialEq, Debug)]
 #[argh(subcommand)]
