@@ -11,6 +11,7 @@ path = "src/main.rs"
 argh = "0.1.12"
 cazan-common = "0.1.1"
 serde_json = "1.0.116"
+serde_ignored = "0.1.10"
 image = "0.25.1"
 cprint = { version = "1.0.0", features = ["ceprint"] }
 crossterm = { version = "0.27.0", features = ["windows"] }
