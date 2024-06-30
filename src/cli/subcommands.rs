@@ -6,6 +6,7 @@ use std::process::ExitCode;
 pub enum SubCommandEnum {
     PreBuild(super::prebuild::PreBuild),
     Init(super::init::Init),
+    Lock(super::lock::Lock)
 }
 
 pub trait SubCommandTrait {
@@ -17,6 +18,7 @@ impl SubCommandEnum {
         match self {
             SubCommandEnum::PreBuild(prebuild) => prebuild.run(),
             SubCommandEnum::Init(init) => init.run(),
+            SubCommandEnum::Lock(lock) => lock.run(),
         }
     }
 }

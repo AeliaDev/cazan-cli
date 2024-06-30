@@ -1,6 +1,7 @@
 mod init;
 mod prebuild;
 mod subcommands;
+mod lock;
 
 use argh::FromArgs;
 pub use subcommands::{SubCommandEnum, SubCommandTrait};
