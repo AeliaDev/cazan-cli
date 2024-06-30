@@ -2,6 +2,7 @@ use cprint::ceprintln;
 use std::process::ExitCode;
 
 mod cli;
+mod config;
 mod terminal;
 
 fn main() -> ExitCode {
@@ -18,8 +19,7 @@ fn main() -> ExitCode {
 
     match cli.subcommand {
         Some(subcommand) => {
-            subcommand.run();
-            ExitCode::SUCCESS
+            subcommand.run()
         }
         None => {
             ceprintln!(

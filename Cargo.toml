@@ -14,3 +14,5 @@ serde_json = "1.0.116"
 image = "0.25.1"
 cprint = { version = "1.0.0", features = ["ceprint"] }
 crossterm = { version = "0.27.0", features = ["windows"] }
+serde = { version = "1.0.203", features = ["derive"] }
+semver = {  version = "1.0.23", features = ["serde"] }

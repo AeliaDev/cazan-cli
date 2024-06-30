@@ -3,6 +3,7 @@
 //! It builds the PNG assets by reading PNG files, extracting the edges, simplifying the edges, and writing the edges to a JSON file
 
 use std::fs;
+use std::process::ExitCode;
 use std::sync::{Arc, Mutex};
 
 use super::SubCommandTrait;
@@ -55,7 +56,7 @@ fn read_dir_recursive(dir: &std::path::Path) -> Vec<std::path::PathBuf> {
 }
 
 impl SubCommandTrait for PreBuild {
-    fn run(&self) {
+    fn run(&self) -> ExitCode {
         let files = self
             .asset_dirs
             .iter()
@@ -121,5 +122,7 @@ impl SubCommandTrait for PreBuild {
 
         let mut writer = fs::File::create(&self.output).unwrap();
         serde_json::to_writer(&mut writer, &map).unwrap();
+
+        ExitCode::SUCCESS
     }
 }
