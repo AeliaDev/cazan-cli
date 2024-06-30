@@ -11,7 +11,7 @@ use crate::terminal::SubTerminal;
 use argh::FromArgs;
 use cazan_common::rdp::rdp;
 use cazan_common::{image::ImageEdgesParser, triangulation::triangulate};
-use cprint::cformat;
+use cprint::{ceprintln, cformat};
 use serde_json::{json, Value};
 
 #[derive(PartialEq, Debug, FromArgs)]
@@ -21,14 +21,6 @@ use serde_json::{json, Value};
     description = "pre-build the assets of your project"
 )]
 pub struct PreBuild {
-    #[argh(
-        option,
-        short = 'o',
-        description = "output file",
-        default = "String::from(\"cazan-assets.json\")"
-    )]
-    pub output: String,
-
     #[argh(option, short = 'a', description = "asset directories")]
     pub asset_dirs: Vec<String>,
 
@@ -57,6 +49,12 @@ fn read_dir_recursive(dir: &std::path::Path) -> Vec<std::path::PathBuf> {
 
 impl SubCommandTrait for PreBuild {
     fn run(&self) -> ExitCode {
+        let cazan_directory = std::env::current_dir().unwrap().join(".cazan");
+        if !cazan_directory.exists() {
+            ceprintln!("Error cazan is not initialized for this directory");
+            return ExitCode::FAILURE;
+        }
+
         let files = self
             .asset_dirs
             .iter()
@@ -118,9 +116,15 @@ impl SubCommandTrait for PreBuild {
             map.insert(file, triangles);
         }
 
+        let cazan_build_directory = cazan_directory.join("build");
+
+        if !cazan_build_directory.exists() && fs::create_dir(cazan_build_directory.clone()).is_err()
+        {
+            ceprintln!("Error creating `.cazan/build` directory")
+        }
         terminal.lock().unwrap().move_to_last_line_and_new_line();
 
-        let mut writer = fs::File::create(&self.output).unwrap();
+        let mut writer = fs::File::create(cazan_build_directory.join("assets.json")).unwrap();
         serde_json::to_writer(&mut writer, &map).unwrap();
 
         ExitCode::SUCCESS

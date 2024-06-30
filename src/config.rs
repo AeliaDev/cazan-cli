@@ -1,6 +1,6 @@
-use std::path::Path;
 use semver::Version;
 use serde::{Deserialize, Serialize};
+use std::path::Path;
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
@@ -12,7 +12,7 @@ pub struct Config<'a> {
     pub file_hash_salt: Option<&'a str>,
     #[serde(skip_serializing)]
     pub use_autoplay_for_multimedia: Option<bool>,
-    pub plugins: Option<Vec<PluginConfig<'a>>>
+    pub plugins: Option<Vec<PluginConfig<'a>>>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -20,5 +20,5 @@ pub struct Config<'a> {
 pub struct PluginConfig<'a> {
     pub name: &'a str,
     pub version: Option<Version>,
-    pub path: Option<&'a Path>
+    pub path: Option<&'a Path>,
 }

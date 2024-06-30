@@ -1,10 +1,10 @@
-use std::process::ExitCode;
-use std::fs;
-use std::env;
-use argh::FromArgs;
-use cprint::{ceprintln, cprintln};
 use crate::cli::SubCommandTrait;
 use crate::config::Config;
+use argh::FromArgs;
+use cprint::{ceprintln, cprintln};
+use std::env;
+use std::fs;
+use std::process::ExitCode;
 
 #[derive(PartialEq, Debug, FromArgs)]
 #[argh(subcommand, name = "lock", description = "Init your Cazan project")]
@@ -35,7 +35,6 @@ impl SubCommandTrait for Lock {
             return ExitCode::FAILURE;
         }
 
-
         if self.force {
             if fs::copy(cazan_json.clone(), locked_config_json).is_err() {
                 ceprintln!("Error copying cazan.json file to .cazan/config.json");
@@ -57,9 +56,14 @@ impl SubCommandTrait for Lock {
         let deserializer = &mut serde_json::Deserializer::from_str(config);
         let mut unused: Vec<String> = vec![];
 
-        let config: Config = match serde_ignored::deserialize(deserializer, |field| { unused.push(field.to_string()) }) {
+        let config: Config = match serde_ignored::deserialize(deserializer, |field| {
+            unused.push(field.to_string())
+        }) {
             Ok(config) => config,
-            Err(_) => { ceprintln!("Error cazan.json is invalid"); return ExitCode::FAILURE; }
+            Err(_) => {
+                ceprintln!("Error cazan.json is invalid");
+                return ExitCode::FAILURE;
+            }
         };
 
         if self.allow_unknown {
@@ -72,7 +76,14 @@ impl SubCommandTrait for Lock {
         }
 
         if !unused.is_empty() {
-            let warning = format!("Warning unknown fields ({}) are ignored. To force using them, use --allow-unknown", unused.iter().map(|field| format!("`{}`", field)).collect::<Vec<_>>().join(", "));
+            let warning = format!(
+                "Warning unknown fields ({}) are ignored. To force using them, use --allow-unknown",
+                unused
+                    .iter()
+                    .map(|field| format!("`{}`", field))
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            );
             cprintln!(warning => Yellow)
         }
 
