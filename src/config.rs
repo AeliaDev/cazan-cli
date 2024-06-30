@@ -3,18 +3,19 @@ use semver::Version;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Config<'a> {
     pub name: &'a str,
     pub version: Version,
     pub authors: Vec<&'a str>,
-    #[serde(rename(serialize = "fileHashSalt", deserialize = "fileHashSalt"))]
     pub file_hash_salt: Option<&'a str>,
-    #[serde(skip_serializing, rename(serialize = "useAutoplayForMultimedia", deserialize = "useAutoplayForMultimedia"))]
+    #[serde(skip_serializing)]
     pub use_autoplay_for_multimedia: Option<bool>,
     pub plugins: Option<Vec<PluginConfig<'a>>>
 }
 
 #[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct PluginConfig<'a> {
     pub name: &'a str,
     pub version: Option<Version>,
