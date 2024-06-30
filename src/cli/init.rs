@@ -1,5 +1,5 @@
 use crate::cli::SubCommandTrait;
-use crate::config::BasicConfig;
+use crate::config::Config;
 use argh::FromArgs;
 use cprint::{ceprintln, cprintln};
 use rand::Rng;
@@ -29,11 +29,14 @@ impl SubCommandTrait for Init {
     fn run(&self) -> ExitCode {
         let current_dir = env::current_dir().unwrap();
         let dir_name = &current_dir.file_name().unwrap().to_str().unwrap();
-        let config = BasicConfig {
+        let salt = generate_salt();
+        let config = Config {
             name: dir_name,
             version: Version::new(0, 0, 1),
             authors: Vec::new(),
-            file_hash_salt: &generate_salt(),
+            file_hash_salt: Some(&salt),
+            use_autoplay_for_multimedia: None,
+            plugins: Some(vec![]),
         };
 
         let serialized_config = serde_json::to_string_pretty(&config).unwrap();
