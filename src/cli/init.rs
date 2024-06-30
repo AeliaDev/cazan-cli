@@ -66,8 +66,8 @@ impl SubCommandTrait for Init {
             return ExitCode::FAILURE;
         }
 
-        // Create config.json file
-        let config_file = current_dir.join("config.json");
+        // Create cazan.json file
+        let config_file = current_dir.join("cazan.json");
 
         // If there's already a config file but the "--force" is not used
         if config_file.exists() && !self.force {
@@ -76,7 +76,7 @@ impl SubCommandTrait for Init {
 
         if fs::write(config_file, serialized_config).is_err() {
             let message = format!(
-                "Error {}creating config.json with default config",
+                "Error {}creating cazan.json with default config",
                 if self.force { "re-" } else { "" }
             );
             ceprintln!(message);
