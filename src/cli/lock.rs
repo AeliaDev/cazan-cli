@@ -1,5 +1,5 @@
 use crate::cli::SubCommandTrait;
-use crate::config::Config;
+use crate::config::{checksum, Config};
 use argh::FromArgs;
 use cprint::{ceprintln, cprintln};
 use std::env;
@@ -35,15 +35,6 @@ impl SubCommandTrait for Lock {
             return ExitCode::FAILURE;
         }
 
-        if self.force {
-            if fs::copy(cazan_json.clone(), locked_config_json).is_err() {
-                ceprintln!("Error copying cazan.json file to .cazan/config.json");
-                return ExitCode::FAILURE;
-            }
-            cprintln!("Locked config");
-            return ExitCode::SUCCESS;
-        }
-
         let config = match fs::read_to_string(cazan_json.clone()) {
             Ok(config) => config,
             Err(_) => {
@@ -52,8 +43,46 @@ impl SubCommandTrait for Lock {
             }
         };
 
-        let config = config.as_str();
-        let deserializer = &mut serde_json::Deserializer::from_str(config);
+        let config_string = config.as_str();
+
+        let checksum = match checksum(&cazan_json) {
+            Ok(checksum) => checksum,
+            Err(_) => {
+                ceprintln!("Error calculating checksum of cazan.json");
+                return ExitCode::FAILURE;
+            }
+        };
+
+        let checksum_file = cazan_directory.join("checksum.txt");
+
+        let old_checksum = fs::read_to_string(checksum_file.clone()).unwrap_or_default();
+
+        if old_checksum.is_empty() && checksum_file.exists() {
+            ceprintln!("Error reading checksum file");
+            return ExitCode::FAILURE;
+        }
+
+        if self.force {
+            if fs::copy(cazan_json.clone(), locked_config_json).is_err() {
+                ceprintln!("Error copying cazan.json file to .cazan/config.json");
+                return ExitCode::FAILURE;
+            }
+
+            if fs::write(checksum_file, checksum).is_err() {
+                ceprintln!("Error saving checksum");
+                return ExitCode::FAILURE;
+            }
+
+            cprintln!("Locked config");
+            return ExitCode::SUCCESS;
+        }
+
+        if old_checksum == checksum {
+            cprintln!("Already up-to-date");
+            return ExitCode::SUCCESS;
+        }
+
+        let deserializer = &mut serde_json::Deserializer::from_str(config_string);
         let mut unused: Vec<String> = vec![];
 
         let config: Config = match serde_ignored::deserialize(deserializer, |field| {
@@ -71,6 +100,12 @@ impl SubCommandTrait for Lock {
                 ceprintln!("Error copying cazan.json file to .cazan/config.json");
                 return ExitCode::FAILURE;
             }
+
+            if fs::write(checksum_file, checksum).is_err() {
+                ceprintln!("Error saving checksum");
+                return ExitCode::FAILURE;
+            }
+
             cprintln!("Locked config");
             return ExitCode::SUCCESS;
         }
@@ -84,13 +119,18 @@ impl SubCommandTrait for Lock {
                     .collect::<Vec<_>>()
                     .join(", ")
             );
-            cprintln!(warning => Yellow)
+            cprintln!(warning => Yellow);
         }
 
         let config = serde_json::to_string_pretty(&config).unwrap();
 
         if fs::write(locked_config_json, config).is_err() {
             ceprintln!("Error copying cazan.json to .cazan/config.json");
+            return ExitCode::FAILURE;
+        }
+
+        if fs::write(checksum_file, checksum).is_err() {
+            ceprintln!("Error saving checksum");
             return ExitCode::FAILURE;
         }
 
