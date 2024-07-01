@@ -7,11 +7,12 @@ use std::process::ExitCode;
 use std::sync::{Arc, Mutex};
 
 use super::SubCommandTrait;
+use crate::config::checksum;
 use crate::terminal::SubTerminal;
 use argh::FromArgs;
 use cazan_common::rdp::rdp;
 use cazan_common::{image::ImageEdgesParser, triangulation::triangulate};
-use cprint::{ceprintln, cformat};
+use cprint::{ceprintln, cformat, cprintln};
 use serde_json::{json, Value};
 
 #[derive(PartialEq, Debug, FromArgs)]
@@ -49,10 +50,19 @@ fn read_dir_recursive(dir: &std::path::Path) -> Vec<std::path::PathBuf> {
 
 impl SubCommandTrait for PreBuild {
     fn run(&self) -> ExitCode {
-        let cazan_directory = std::env::current_dir().unwrap().join(".cazan");
+        let current_dir = std::env::current_dir().unwrap();
+        let cazan_directory = current_dir.join(".cazan");
         if !cazan_directory.exists() {
             ceprintln!("Error cazan is not initialized for this directory");
             return ExitCode::FAILURE;
+        }
+
+        let cazan_config = current_dir.join("cazan.json");
+        let checksum_file = current_dir.join(".cazan/checksum.txt");
+
+        if checksum(&cazan_config).unwrap() != fs::read_to_string(checksum_file).unwrap_or_default()
+        {
+            cprintln!("Warning lock file is not up-to-date with cazan.json. To update it use `cazan lock`" => Yellow);
         }
 
         let files = self

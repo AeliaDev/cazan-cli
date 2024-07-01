@@ -45,7 +45,7 @@ impl SubCommandTrait for Lock {
 
         let config_string = config.as_str();
 
-        let checksum = match checksum(&cazan_json) {
+        let new_checksum = match checksum(&cazan_json) {
             Ok(checksum) => checksum,
             Err(_) => {
                 ceprintln!("Error calculating checksum of cazan.json");
@@ -68,7 +68,7 @@ impl SubCommandTrait for Lock {
                 return ExitCode::FAILURE;
             }
 
-            if fs::write(checksum_file, checksum).is_err() {
+            if fs::write(checksum_file, new_checksum).is_err() {
                 ceprintln!("Error saving checksum");
                 return ExitCode::FAILURE;
             }
@@ -77,7 +77,7 @@ impl SubCommandTrait for Lock {
             return ExitCode::SUCCESS;
         }
 
-        if old_checksum == checksum {
+        if old_checksum == new_checksum {
             cprintln!("Already up-to-date");
             return ExitCode::SUCCESS;
         }
@@ -101,7 +101,7 @@ impl SubCommandTrait for Lock {
                 return ExitCode::FAILURE;
             }
 
-            if fs::write(checksum_file, checksum).is_err() {
+            if fs::write(checksum_file, new_checksum).is_err() {
                 ceprintln!("Error saving checksum");
                 return ExitCode::FAILURE;
             }
@@ -129,7 +129,7 @@ impl SubCommandTrait for Lock {
             return ExitCode::FAILURE;
         }
 
-        if fs::write(checksum_file, checksum).is_err() {
+        if fs::write(checksum_file, new_checksum).is_err() {
             ceprintln!("Error saving checksum");
             return ExitCode::FAILURE;
         }
