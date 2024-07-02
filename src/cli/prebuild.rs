@@ -122,14 +122,14 @@ impl SubCommandTrait for PreBuild {
                         i,
                     );
 
-                    (file.to_str().unwrap().to_string(), json!(triangles))
+                    (file, json!(triangles))
                 })
             })
             .collect();
 
         for handle in handles {
             let (file, triangles) = handle.join().unwrap();
-            map.insert(file, triangles);
+            map.insert(checksum(&file).unwrap().to_string(), triangles);
         }
 
         let cazan_build_directory = cazan_directory.join("build");
@@ -138,6 +138,7 @@ impl SubCommandTrait for PreBuild {
         {
             ceprintln!("Error creating `.cazan/build` directory")
         }
+
         terminal.lock().unwrap().move_to_last_line_and_new_line();
 
         let mut writer = fs::File::create(cazan_build_directory.join("assets.json")).unwrap();
