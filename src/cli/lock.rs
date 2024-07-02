@@ -31,7 +31,7 @@ impl SubCommandTrait for Lock {
         let locked_config_json = cazan_directory.join("config.json");
 
         if !cazan_json.exists() || !cazan_directory.exists() {
-            ceprintln!("Error current directory is not initialized for Cazan (use `cazan init`)");
+            ceprintln!("Error cazan is not initialized for this directory");
             return ExitCode::FAILURE;
         }
 

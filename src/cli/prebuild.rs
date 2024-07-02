@@ -7,13 +7,15 @@ use std::process::ExitCode;
 use std::sync::{Arc, Mutex};
 
 use super::SubCommandTrait;
-use crate::config::checksum;
+use crate::config::{checksum, Config};
 use crate::terminal::SubTerminal;
 use argh::FromArgs;
 use cazan_common::rdp::rdp;
 use cazan_common::{image::ImageEdgesParser, triangulation::triangulate};
 use cprint::{ceprintln, cformat, cprintln};
 use serde_json::{json, Value};
+
+const DEFAULT_EPSILON: f64 = 3.0;
 
 #[derive(PartialEq, Debug, FromArgs)]
 #[argh(
@@ -28,10 +30,9 @@ pub struct PreBuild {
     #[argh(
         option,
         short = 'e',
-        description = "epsilon value for the Ramer-Douglas-Peucker algorithm (Image simplification)",
-        default = "3.0"
+        description = "epsilon value for the Ramer-Douglas-Peucker algorithm (Image simplification)"
     )]
-    pub epsilon: f64,
+    pub epsilon: Option<f64>,
 }
 
 fn read_dir_recursive(dir: &std::path::Path) -> Vec<std::path::PathBuf> {
@@ -59,6 +60,8 @@ impl SubCommandTrait for PreBuild {
 
         let cazan_config = current_dir.join("cazan.json");
         let checksum_file = current_dir.join(".cazan/checksum.txt");
+        let config = fs::read_to_string(current_dir.join(".cazan/config.json")).unwrap();
+        let config: Config = serde_json::from_str(config.as_str()).unwrap();
 
         if checksum(&cazan_config).unwrap() != fs::read_to_string(checksum_file).unwrap_or_default()
         {
@@ -100,7 +103,7 @@ impl SubCommandTrait for PreBuild {
                     let image = image::open(&file).unwrap();
                     let edges_parser = ImageEdgesParser::new(image);
                     let polygon = edges_parser.as_polygon();
-                    let rdp_polygon = rdp(&polygon, epsilon);
+                    let rdp_polygon = rdp(&polygon, epsilon.unwrap_or(config.rdp_epsilon.unwrap_or(DEFAULT_EPSILON)));
                     let triangles = triangulate(&rdp_polygon).expect("Error triangulating");
 
                     terminal.lock().unwrap().rewrite_to(

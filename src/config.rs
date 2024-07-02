@@ -11,9 +11,10 @@ pub struct Config<'a> {
     pub name: &'a str,
     pub version: Version,
     pub authors: Vec<&'a str>,
-    pub file_hash_salt: Option<&'a str>,
-    #[serde(skip_serializing)]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub use_autoplay_for_multimedia: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub rdp_epsilon: Option<f64>,
     pub plugins: Option<Vec<PluginConfig<'a>>>,
 }
 

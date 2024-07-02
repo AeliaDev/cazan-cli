@@ -2,7 +2,6 @@ use crate::cli::SubCommandTrait;
 use crate::config::Config;
 use argh::FromArgs;
 use cprint::{ceprintln, cprintln};
-use rand::Rng;
 use semver::Version;
 use std::process::ExitCode;
 use std::{env, fs};
@@ -18,24 +17,16 @@ pub struct Init {
     pub force: bool,
 }
 
-fn generate_salt() -> String {
-    let mut rng = rand::thread_rng();
-    let mut salt = vec![0u8; 16];
-    rng.fill(&mut salt[..]);
-    hex::encode(salt)
-}
-
 impl SubCommandTrait for Init {
     fn run(&self) -> ExitCode {
         let current_dir = env::current_dir().unwrap();
         let dir_name = &current_dir.file_name().unwrap().to_str().unwrap();
-        let salt = generate_salt();
         let config = Config {
             name: dir_name,
             version: Version::new(0, 0, 1),
             authors: Vec::new(),
-            file_hash_salt: Some(&salt),
             use_autoplay_for_multimedia: None,
+            rdp_epsilon: None,
             plugins: Some(vec![]),
         };
 
