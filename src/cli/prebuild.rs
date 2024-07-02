@@ -103,7 +103,10 @@ impl SubCommandTrait for PreBuild {
                     let image = image::open(&file).unwrap();
                     let edges_parser = ImageEdgesParser::new(image);
                     let polygon = edges_parser.as_polygon();
-                    let rdp_polygon = rdp(&polygon, epsilon.unwrap_or(config.rdp_epsilon.unwrap_or(DEFAULT_EPSILON)));
+                    let rdp_polygon = rdp(
+                        &polygon,
+                        epsilon.unwrap_or(config.rdp_epsilon.unwrap_or(DEFAULT_EPSILON)),
+                    );
                     let triangles = triangulate(&rdp_polygon).expect("Error triangulating");
 
                     terminal.lock().unwrap().rewrite_to(
