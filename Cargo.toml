@@ -17,6 +17,4 @@ cprint = { version = "1.0.0", features = ["ceprint"] }
 crossterm = { version = "0.27.0", features = ["windows"] }
 serde = { version = "1.0.203", features = ["derive"] }
 semver = {  version = "1.0.23", features = ["serde"] }
-rand = "0.8.5"
-hex = "0.4.3"
 sha2 = "0.10.8"
