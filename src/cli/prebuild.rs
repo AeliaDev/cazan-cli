@@ -2,7 +2,9 @@
 //! This command is used to prebuild the assets of your project
 //! It builds the PNG assets by reading PNG files, extracting the edges, simplifying the edges, and writing the edges to a JSON file
 
+use std::error::Error;
 use std::fs;
+use std::path::PathBuf;
 use std::process::ExitCode;
 use std::sync::{Arc, Mutex};
 
@@ -12,8 +14,11 @@ use crate::terminal::SubTerminal;
 use argh::FromArgs;
 use cazan_common::rdp::rdp;
 use cazan_common::{image::ImageEdgesParser, triangulation::triangulate};
+use cazan_common::geometry::Triangle;
 use cprint::{ceprintln, cformat, cprintln};
+use image::GenericImageView;
 use serde_json::{json, Value};
+use plotters::prelude::*;
 
 const DEFAULT_EPSILON: f64 = 3.0;
 
@@ -33,6 +38,13 @@ pub struct PreBuild {
         description = "epsilon value for the Ramer-Douglas-Peucker algorithm (Image simplification)"
     )]
     pub epsilon: Option<f64>,
+
+    #[argh(
+        switch,
+        short = 'p',
+        description = "create preview files to compare hit-boxes with the original images",
+    )]
+    pub preview: bool,
 }
 
 fn read_dir_recursive(dir: &std::path::Path) -> Vec<std::path::PathBuf> {
@@ -122,14 +134,39 @@ impl SubCommandTrait for PreBuild {
                         i,
                     );
 
-                    (file, json!(triangles))
+                    (file, triangles)
                 })
             })
             .collect();
 
+        let cazan_tmp: PathBuf = if self.preview {
+            let c = std::env::current_dir().unwrap().join(".cazan-tmp");
+            if !c.exists() {
+                fs::create_dir(&c).expect("Error creating the cazan temp directory");
+            }
+            c
+        } else { PathBuf::new() };
+
+        let mut warnings: Vec<String> = vec![];
+
         for handle in handles {
             let (file, triangles) = handle.join().unwrap();
-            map.insert(checksum(&file).unwrap().to_string(), triangles);
+
+            if self.preview && file.extension() == Some("png".as_ref()) {
+                match preview(&file, &triangles, &cazan_tmp) {
+                    Ok(_) => {},
+                    Err(e) => warnings.push(format!("Warning `{}` preview couldn't have been created: {e}", file.to_str().unwrap()))
+
+                }
+            }
+
+            map.insert(checksum(&file).unwrap().to_string(), json!(triangles));
+        }
+
+        terminal.lock().unwrap().move_to_last_line_and_new_line();
+
+        for warning in warnings {
+            cprintln!(warning => Yellow);
         }
 
         let cazan_build_directory = cazan_directory.join("build");
@@ -139,11 +176,55 @@ impl SubCommandTrait for PreBuild {
             ceprintln!("Error creating `.cazan/build` directory")
         }
 
-        terminal.lock().unwrap().move_to_last_line_and_new_line();
 
         let mut writer = fs::File::create(cazan_build_directory.join("assets.json")).unwrap();
         serde_json::to_writer(&mut writer, &map).unwrap();
 
         ExitCode::SUCCESS
     }
+}
+
+fn preview(file: &PathBuf, triangles: &Vec<Triangle>, cazan_tmp: &PathBuf) -> Result<(), Box<dyn Error>> {
+    let image = image::open(&file)?;
+    let save_path = cazan_tmp.join(file.file_stem().unwrap().to_str().unwrap().to_owned() + "-" + &checksum(file)?[0..5] + "." + file.extension().unwrap().to_str().unwrap());
+
+    let root = BitMapBackend::new(&save_path, image.dimensions()).into_drawing_area();
+    let mut chart = ChartBuilder::on(&root).build_cartesian_2d(0..image.dimensions().0, image.dimensions().1..0)?;
+
+    let rgb = image.to_rgba8().chunks(4).map(|rgba| {
+        let (r, g, b, a) = (rgba[0] as i32, rgba[1] as i32, rgba[2] as i32, rgba[3] as f64 / 255.);
+
+        vec![((1. - a) * 255. + a * r as f64) as u8,
+             ((1. - a) * 255. + a * g as f64) as u8,
+             ((1. - a) * 255. + a * b as f64) as u8,
+        ]
+    }).flatten().collect::<Vec<u8>>();
+
+    let elem = BitMapElement::with_owned_buffer((0, 0), image.dimensions(), rgb).unwrap();
+
+    root.draw(&elem)?;
+
+
+    let line_style = ShapeStyle {
+        color: RED.mix(0.6),
+        filled: true,
+        stroke_width: 2,
+    };
+
+    for triangle in triangles {
+        let triangle = &vec![(triangle.0.x as i32, triangle.0.y as i32), (triangle.1.x as i32, triangle.1.y as i32), (triangle.2.x as i32, triangle.2.y as i32)]; // TODO: Simplify this by implementing Into<Vec<(T,T)>> for Triangle in cazan common
+
+        root.draw(&Polygon::new(
+            triangle.clone(),
+            RED.mix(0.3))
+        )?;
+        chart.draw_series(LineSeries::new(
+            triangle.iter().chain(std::iter::once(&triangle[0])).map(|&(x, y)| (x as u32, y as u32)),
+            line_style,
+        )).unwrap();
+    }
+
+    root.present()?;
+
+    Ok(())
 }
