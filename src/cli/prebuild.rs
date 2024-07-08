@@ -83,8 +83,9 @@ impl SubCommandTrait for PreBuild {
             cprintln!("Warning lock file is not up-to-date with cazan.json. To update it use `cazan lock`" => Yellow);
         }
 
-        let files: Vec<PathBuf> = self
-            .assets
+        let assets = if self.assets.is_empty() {config.assets.unwrap_or_default() } else { self.assets.iter().map(|s| s.as_str()).collect() };
+
+        let files: Vec<PathBuf> = assets
             .iter()
             .flat_map(|pattern| glob(pattern).expect("Failed to read pattern"))
             .map(|entry| entry.unwrap_or_else(|_| PathBuf::new()))

@@ -27,6 +27,7 @@ impl SubCommandTrait for Init {
             authors: Vec::new(),
             use_autoplay_for_multimedia: None,
             rdp_epsilon: None,
+            assets: Some(vec![]),
             plugins: Some(vec![]),
         };
 
