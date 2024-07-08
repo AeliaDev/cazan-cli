@@ -18,6 +18,7 @@ use cazan_common::{image::ImageEdgesParser, triangulation::triangulate};
 
 use argh::FromArgs;
 use cprint::{ceprintln, cformat, cprintln};
+use glob::glob;
 use image::GenericImageView;
 use plotters::prelude::*;
 use serde_json::{json, Value};
@@ -31,8 +32,12 @@ const DEFAULT_EPSILON: f64 = 3.0;
     description = "pre-build the assets of your project"
 )]
 pub struct PreBuild {
-    #[argh(option, short = 'a', description = "asset directories")]
-    pub asset_dirs: Vec<String>,
+    #[argh(
+        option,
+        short = 'a',
+        description = "the assets of your project (ex: assets/sprite-*.png"
+    )]
+    pub assets: Vec<String>,
 
     #[argh(
         option,
@@ -53,20 +58,6 @@ pub struct PreBuild {
         description = "open the folder to the preview files (do not use without --prebuild)"
     )]
     pub open: bool,
-}
-
-fn read_dir_recursive(dir: &std::path::Path) -> Vec<std::path::PathBuf> {
-    let mut files = Vec::new();
-    for entry in fs::read_dir(dir).unwrap() {
-        let entry = entry.unwrap();
-        let path = entry.path();
-        if path.is_dir() {
-            files.extend(read_dir_recursive(&path));
-        } else {
-            files.push(path);
-        }
-    }
-    files
 }
 
 impl SubCommandTrait for PreBuild {
@@ -92,17 +83,17 @@ impl SubCommandTrait for PreBuild {
             cprintln!("Warning lock file is not up-to-date with cazan.json. To update it use `cazan lock`" => Yellow);
         }
 
-        let files = self
-            .asset_dirs
+        let files: Vec<PathBuf> = self
+            .assets
             .iter()
-            .flat_map(|dir| read_dir_recursive(dir.as_ref()))
-            .collect::<Vec<PathBuf>>();
-
-        let files: Vec<PathBuf> = files
-            .iter()
+            .flat_map(|pattern| glob(pattern).expect("Failed to read pattern"))
+            .map(|entry| entry.unwrap_or_else(|_| PathBuf::new()))
             .filter(|file| file.extension().map_or(false, |ext| ext == "png"))
-            .cloned()
             .collect();
+
+        if files.is_empty() {
+            return ExitCode::SUCCESS;
+        }
 
         let mut map = serde_json::Map::<String, Value>::new();
         let terminal: Arc<Mutex<SubTerminal>> =
