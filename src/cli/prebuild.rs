@@ -100,10 +100,7 @@ impl SubCommandTrait for PreBuild {
 
         let files: Vec<PathBuf> = files
             .iter()
-            .filter(|file| {
-                file.extension()
-                    .map_or(false, |ext| ext == "png")
-            })
+            .filter(|file| file.extension().map_or(false, |ext| ext == "png"))
             .cloned()
             .collect();
 
