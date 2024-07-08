@@ -102,7 +102,7 @@ impl SubCommandTrait for PreBuild {
             .iter()
             .filter(|file| {
                 file.extension()
-                    .map_or(false, |ext| ext == "png" || ext == "jpg" || ext == "jpeg")
+                    .map_or(false, |ext| ext == "png")
             })
             .cloned()
             .collect();
